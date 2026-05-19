@@ -19,28 +19,47 @@ using SHealthConstants::kMissingWeight;
 using SHealthConstants::kPercentMultiplier;
 
 int SHealth::calculateBmi(const std::string& filename) {
+    if (!loadRecordsFromFile(filename)) {
+        return 0;
+    }
+    imputeMissingWeightsByAgeBand();
+    computeAllBmis();
+    aggregateRatiosByAgeBand();
+    return recordCount;
+}
+
+bool SHealth::loadRecordsFromFile(const std::string& filename) {
     recordCount = 0;
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << filename << std::endl;
-        return 0;
+        return false;
     }
 
     std::string line;
     std::getline(file, line); // 첫번째 줄 읽기 (헤더)
     while (std::getline(file, line)) {
-        std::vector<std::string> tokens = split(line, kCsvDelimiter);
-        if (tokens.empty()) {
+        if (!parseAndStoreLine(line)) {
             break;
         }
-        ages[recordCount] = std::stoi(tokens[kCsvColAge]);
-        weights[recordCount] = std::stod(tokens[kCsvColWeight]);
-        heights[recordCount] = std::stod(tokens[kCsvColHeight]);
-        recordCount++;
     }
     file.close();
+    return true;
+}
 
-    // 데이터 수집 중 누락된 체중에 나이대의 평균 체중을 적용
+bool SHealth::parseAndStoreLine(const std::string& line) {
+    std::vector<std::string> tokens = split(line, kCsvDelimiter);
+    if (tokens.empty()) {
+        return false;
+    }
+    ages[recordCount] = std::stoi(tokens[kCsvColAge]);
+    weights[recordCount] = std::stod(tokens[kCsvColWeight]);
+    heights[recordCount] = std::stod(tokens[kCsvColHeight]);
+    recordCount++;
+    return true;
+}
+
+void SHealth::imputeMissingWeightsByAgeBand() {
     for (int ageBandStart = kAgeBandStartMin; ageBandStart <= kAgeBandStartMax;
          ageBandStart += kAgeBandStep) {
         double weightSum = 0;
@@ -62,14 +81,32 @@ int SHealth::calculateBmi(const std::string& filename) {
             }
         }
     }
+}
 
-    // BMI 계산하기
+void SHealth::computeAllBmis() {
     for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
         const double heightMeters = heights[recordIndex] / kHeightCmPerMeter;
         bmis[recordIndex] = weights[recordIndex] / (heightMeters * heightMeters);
     }
+}
 
-    // 나이대의 BMI기준 저체중, 정상체중, 과체중, 비만 비율 계산
+SHealth::BmiClassSlot SHealth::classifyBmi(double bmi) const {
+    if (bmi <= kBmiUnderMax) {
+        return BmiClassSlot::Underweight;
+    }
+    if (bmi > kBmiUnderMax && bmi < kBmiNormalMax) {
+        return BmiClassSlot::Normal;
+    }
+    if (bmi >= kBmiNormalMax && bmi < kBmiOverweightMax) {
+        return BmiClassSlot::Overweight;
+    }
+    if (bmi > kBmiOverweightMax) {
+        return BmiClassSlot::Obesity;
+    }
+    return BmiClassSlot::None;
+}
+
+void SHealth::aggregateRatiosByAgeBand() {
     for (int ageBandStart = kAgeBandStartMin; ageBandStart <= kAgeBandStartMax;
          ageBandStart += kAgeBandStep) {
         int underweightCount = 0;
@@ -80,14 +117,21 @@ int SHealth::calculateBmi(const std::string& filename) {
         for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
             if (ages[recordIndex] >= ageBandStart && ages[recordIndex] < ageBandStart + kAgeBandWidth) {
                 bandMemberCount++;
-                if (bmis[recordIndex] <= kBmiUnderMax) {
-                    underweightCount++;
-                } else if (bmis[recordIndex] > kBmiUnderMax && bmis[recordIndex] < kBmiNormalMax) {
-                    normalweightCount++;
-                } else if (bmis[recordIndex] >= kBmiNormalMax && bmis[recordIndex] < kBmiOverweightMax) {
-                    overweightCount++;
-                } else if (bmis[recordIndex] > kBmiOverweightMax) {
-                    obesityCount++;
+                switch (classifyBmi(bmis[recordIndex])) {
+                    case BmiClassSlot::Underweight:
+                        underweightCount++;
+                        break;
+                    case BmiClassSlot::Normal:
+                        normalweightCount++;
+                        break;
+                    case BmiClassSlot::Overweight:
+                        overweightCount++;
+                        break;
+                    case BmiClassSlot::Obesity:
+                        obesityCount++;
+                        break;
+                    case BmiClassSlot::None:
+                        break;
                 }
             }
         }
@@ -123,7 +167,6 @@ int SHealth::calculateBmi(const std::string& filename) {
             obesity70 = (double)obesityCount * kPercentMultiplier / bandMemberCount;
         }
     }
-    return recordCount;
 }
 
 double SHealth::getBmiRatio(int ageClass, int type) {

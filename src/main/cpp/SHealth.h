@@ -38,6 +38,8 @@ public:
     double getBmiRatio(int ageClass, int type);
 
 private:
+    enum class BmiClassSlot { None, Underweight, Normal, Overweight, Obesity };
+
     int recordCount = 0;
     int ages[10000];
     double heights[10000];
@@ -56,6 +58,13 @@ private:
     // 비만 비율(%) — suffix: ageBand 시작 연령
     double obesity20 = 0, obesity30 = 0, obesity40 = 0;
     double obesity50 = 0, obesity60 = 0, obesity70 = 0;
+
+    bool loadRecordsFromFile(const std::string& filename);
+    bool parseAndStoreLine(const std::string& line);
+    void imputeMissingWeightsByAgeBand();
+    void computeAllBmis();
+    BmiClassSlot classifyBmi(double bmi) const;
+    void aggregateRatiosByAgeBand();
 
     std::vector<std::string> split(const std::string& line, char delimiter);
 };
