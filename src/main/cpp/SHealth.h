@@ -3,6 +3,27 @@
 #include <string>
 #include <vector>
 
+// README F-05 BMI 분류 경계 및 도메인 상수
+namespace SHealthConstants {
+constexpr double kBmiUnderMax = 18.5;        // 저체중: BMI ≤ 18.5
+constexpr double kBmiNormalMax = 23.0;         // 정상 상한(미만): 18.5 초과 ~ 23 미만
+constexpr double kBmiOverweightMax = 25.0;   // 과체중 상한(미만): 23 이상 ~ 25 미만
+
+constexpr int kAgeBandStartMin = 20;
+constexpr int kAgeBandStartMax = 70;
+constexpr int kAgeBandStep = 10;
+constexpr int kAgeBandWidth = 10;
+
+constexpr int kCsvColAge = 1;
+constexpr int kCsvColWeight = 2;
+constexpr int kCsvColHeight = 3;
+constexpr char kCsvDelimiter = ',';
+
+constexpr double kHeightCmPerMeter = 100.0;
+constexpr double kMissingWeight = 0.0;
+constexpr int kPercentMultiplier = 100;
+}  // namespace SHealthConstants
+
 // getBmiRatio(type) 인자 코드값 — public API 시그니처 유지
 enum class BmiCategoryCode : int {
     Underweight = 100,
