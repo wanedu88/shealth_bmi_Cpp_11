@@ -2,9 +2,9 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | 1.1 |
+| 문서 버전 | 1.2 |
 | 작성일 | 2026-05-20 |
-| 기준 ctest | **26/26 Green** (100%) |
+| 기준 ctest | **28/28 Green** (100%) |
 | SSOT | [docs/test_plan.md](./test_plan.md) §8, [docs/requirements_analysis.md](./requirements_analysis.md) §4 |
 | 실패 로그 | `build/Testing/Temporary/LastTest.log`, `LastTestsFailed.log` |
 
@@ -17,10 +17,10 @@
 | **Open P0** (ctest 실패) | **0** | — |
 | **Fixed P0** | **1** | DEF-001 (2026-05-20) |
 | P1 (스냅샷·명세 미확정) | 1 | DEF-002 |
-| P2 (기능 개선 범위) | 1 | DEF-003 |
+| **Fixed P2** | **1** | DEF-003 (F-10, 2026-05-20) |
 | 연쇄·모니터링 | 1 | DEF-004 (회귀 확인 완료) |
 
-**우선 수정 순서:** (완료) DEF-001·004 → (별도 턴) DEF-002·003 요구 확정
+**우선 수정 순서:** (완료) DEF-001·003·004 → (별도 턴) DEF-002 요구 확정
 
 ---
 
@@ -30,7 +30,7 @@
 |--------|-----|--------|--------|------|-----------|------|----------------------|-----------|---------|------|
 | **DEF-001** | 16 | `TC_16_Boundary_Obesity_25` | **P0** | **Fixed** | F-05 | 비만(400) 비율 기대 100% → **0%** | `SHealth.cpp:121` `classifyBmi` — 비만 조건 `bmi > kBmiOverweightMax` (25.0 **제외**) | `bmi >= kBmiOverweightMax` + `tc16` weight **72.25** (§3) | 16, 18 | `ctest` **26/26 Green** |
 | DEF-002 | 07 | `TC_07_AllWeightsZero_DivideByZero` | P1 | Snapshot | F-03 | 연령대 전원 weight=0 시 `weightSum/0` → NaN 보정 | `SHealth.cpp:98` `imputeMissingWeightsByAgeBand` — `nonZeroWeightCount==0` 미가드 | `if (nonZeroWeightCount == 0) continue;` 또는 평균 skip (요구 확정 후) | 06~10 | TC_07 기대값 재정의 후 Green |
-| DEF-003 | 05 | `TC_05_HeightZero_CurrentBehavior` | P2 | Snapshot | F-10 (README §4) | height=0 → BMI `inf` → `bmi>25`로 **비만 100%** | `SHealth.cpp:104-107` `computeAllBmis` — 0 나눗셈 미처리 | README 4단계: height=0 보정 로직 (범위 외·별도 스프린트) | 05 | F-10 구현 TC 추가 |
+| **DEF-003** | 05, 34 | `TC_05_HeightZero_NoBandPeers_SkipsImpute`, `TC_34_ImputesHeight_BandAverage` | P2 | **Fixed** | F-10 | height=0 → BMI `inf` → 비만 100% | `computeAllBmis` 전 height 보정 없음 | `imputeMissingHeightsByAgeBand` + `kMissingHeight`; `nonZeroHeightCount==0` skip | 05, 34 | `ctest` **28/28 Green** |
 | DEF-004 | 18 | `TC_18_Classification_ExclusiveComplete` | 연쇄 | **Verified** | F-05, F-06 | 4분류 합 **100%** 미달 가능 | DEF-001 시 `BmiClassSlot::None` 누락분 | DEF-001 수정 후 회귀 — **통과** | 18 | TC_18 Green, 합≈100 |
 
 ---
@@ -138,14 +138,15 @@ if (bmi >= kBmiOverweightMax) {
 | `test_plan` §8 | 요구 확정 후 Green; 당장은 **동작 고정** |
 | 최소 수정 (안) | `nonZeroWeightCount == 0` 이면 보정 루프 skip |
 
-### DEF-003 — height=0 (P2, Snapshot)
+### DEF-003 — height=0 (P2) ✅ Fixed
 
 | 항목 | 내용 |
 |------|------|
-| TC | 05 — `TC_05_HeightZero_CurrentBehavior` |
-| 현재 테스트 | ctest **Green** (스냅샷: inf → 비만 100%) |
-| README | §4 F-10 — **기능 개선** 단계 (미구현) |
-| 최소 수정 | 별도 스프린트; 3단계 단위 테스트 범위 **Out of Scope** |
+| TC | 05 — `TC_05_HeightZero_NoBandPeers_SkipsImpute` (보정 표본 없음 → 보정 생략) |
+| TC | 34 — `TC_34_ImputesHeight_BandAverage` (170/0/180 → 0행 175.0 보정) |
+| 구현 | `imputeMissingHeightsByAgeBand()` — F-03 체중 보정과 대칭; `runBmiPipeline`에서 weight 보정 후 실행 |
+| 가드 | `nonZeroHeightCount == 0` 이면 해당 연령대 height 보정 skip (DEF-002와 동일 정책) |
+| 검증 | `ctest` **28/28 Green** (2026-05-20) |
 
 ### DEF-004 — TC_18 비율 합 (연쇄, Monitor)
 
@@ -166,7 +167,8 @@ if (bmi >= kBmiOverweightMax) {
 | 2 | DEF-001 | `tc16_bmi_25.csv` weight → 72.25 | ✅ |
 | 3 | DEF-004 | 회귀 TC_18·전체 `ctest` 26/26 | ✅ |
 | 4 | — | `test_plan.md` §3 TC_16, §8 Red 해소 | ✅ |
-| 5 | DEF-002·003 | 요구·README §4 확정 후 | 대기 |
+| 5 | DEF-003 | `imputeMissingHeightsByAgeBand` + TC_34 | ✅ |
+| 6 | DEF-002 | 요구 확정 후 | 대기 |
 
 ---
 
@@ -174,9 +176,9 @@ if (bmi >= kBmiOverweightMax) {
 
 ```
 Test project C:/DEV/shealth_bmi_Cpp_11/build
-100% tests passed, 0 tests failed out of 26
+100% tests passed, 0 tests failed out of 28
 ```
 
 | # | 결과 | 비고 |
 |---|------|------|
-| 1–26 | **Passed** | DEF-001 Green 턴 (2026-05-20) |
+| 1–28 | **Passed** | DEF-003 F-10 Green 턴 (2026-05-20) |

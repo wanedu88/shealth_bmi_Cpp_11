@@ -22,7 +22,8 @@ constexpr int kCsvColHeight = 3;
 constexpr char kCsvDelimiter = ',';
 
 constexpr double kHeightCmPerMeter = 100.0;
-constexpr double kMissingWeight = 0.0;
+constexpr double kMissingWeight = 0.0;  // F-03: 체중 누락
+constexpr double kMissingHeight = 0.0;  // F-10: 키 누락 (동일 0.0)
 constexpr int kPercentMultiplier = 100;
 }  // namespace SHealthConstants
 
@@ -76,6 +77,7 @@ private:
     // --- Domain + Statistics pipeline ---
     void runBmiPipeline();
     void imputeMissingWeightsByAgeBand();
+    void imputeMissingHeightsByAgeBand();
     void computeAllBmis();
     BmiClassSlot classifyBmi(double bmi) const;
     void aggregateRatiosByAgeBand();

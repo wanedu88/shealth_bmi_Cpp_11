@@ -292,14 +292,29 @@ TEST_F(SHealthBMITest, TC_18_Classification_ExclusiveComplete) {
     EXPECT_NEAR(100.0, ratioSumForBand(health, 20), 1e-2);
 }
 
-TEST_F(SHealthBMITest, TC_05_HeightZero_CurrentBehavior) {
-    // Given: height=0 (height_m=0 → BMI inf)
+TEST_F(SHealthBMITest, TC_05_HeightZero_NoBandPeers_SkipsImpute) {
+    // Given: 20대 1명 height=0, 동 연령대 유효 height 표본 없음
     const std::string path = fixturePath("tc05_height_zero.csv");
     // When:  calculateBmi(path)
     const int count = health.calculateBmi(path);
-    // Then:  스냅샷 — inf → bmi>25 → 비만 100% (F-10 전까지 고정)
+    // Then:  F-10 보정 생략(nonZeroHeightCount=0) → height 0 유지 → BMI inf → 비만 100%
     EXPECT_EQ(1, count);
     EXPECT_NEAR(100.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Obesity)),
+                1e-2);
+}
+
+TEST_F(SHealthBMITest, TC_34_ImputesHeight_BandAverage) {
+    // Given: 20대 3명 height 170/0/180 — 0 행은 (170+180)/2=175.0 보정 (F-10)
+    const std::string path = fixturePath("tc34_impute_heights.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  보정 후 3명 모두 BMI 정상 구간 → Normal 100%
+    EXPECT_EQ(3, count);
+    EXPECT_NEAR(100.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Normal)),
+                1e-2);
+    EXPECT_NEAR(0.0,
                 health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Obesity)),
                 1e-2);
 }

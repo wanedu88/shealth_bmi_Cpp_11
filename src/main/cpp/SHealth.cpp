@@ -16,6 +16,7 @@ using SHealthConstants::kCsvColHeight;
 using SHealthConstants::kCsvColWeight;
 using SHealthConstants::kCsvDelimiter;
 using SHealthConstants::kHeightCmPerMeter;
+using SHealthConstants::kMissingHeight;
 using SHealthConstants::kMissingWeight;
 using SHealthConstants::kPercentMultiplier;
 
@@ -29,6 +30,7 @@ int SHealth::calculateBmi(const std::string& filename) {
 
 void SHealth::runBmiPipeline() {
     imputeMissingWeightsByAgeBand();
+    imputeMissingHeightsByAgeBand();
     computeAllBmis();
     aggregateRatiosByAgeBand();
 }
@@ -102,6 +104,32 @@ void SHealth::imputeMissingWeightsByAgeBand() {
             if (isInAgeBand(ages[recordIndex], ageBandStart) &&
                 weights[recordIndex] == kMissingWeight) {
                 weights[recordIndex] = weightSum / nonZeroWeightCount;
+            }
+        }
+    }
+}
+
+void SHealth::imputeMissingHeightsByAgeBand() {
+    for (int ageBandStart = kAgeBandStartMin; ageBandStart <= kAgeBandStartMax;
+         ageBandStart += kAgeBandStep) {
+        double heightSum = 0;
+        int nonZeroHeightCount = 0;
+        for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
+            if (isInAgeBand(ages[recordIndex], ageBandStart)) {
+                if (heights[recordIndex] == kMissingHeight) {
+                    continue;
+                }
+                heightSum += heights[recordIndex];
+                nonZeroHeightCount++;
+            }
+        }
+        if (nonZeroHeightCount == 0) {
+            continue;
+        }
+        for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
+            if (isInAgeBand(ages[recordIndex], ageBandStart) &&
+                heights[recordIndex] == kMissingHeight) {
+                heights[recordIndex] = heightSum / nonZeroHeightCount;
             }
         }
     }
