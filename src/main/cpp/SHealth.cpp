@@ -182,19 +182,28 @@ double SHealth::ratioForCategory(const AgeBandRatios& ratios, BmiCategoryCode ca
 }
 
 double SHealth::getBmiRatio(int ageClass, int type) {
-    const int bandIndex = ageBandIndexFromClass(ageClass);
-    if (bandIndex < 0) {
-        return 0.0;
-    }
+    const AgeBandDistribution distribution = getAgeBandDistribution(ageClass);
     switch (static_cast<BmiCategoryCode>(type)) {
         case BmiCategoryCode::Underweight:
+            return distribution.underweight;
         case BmiCategoryCode::Normal:
+            return distribution.normal;
         case BmiCategoryCode::Overweight:
+            return distribution.overweight;
         case BmiCategoryCode::Obesity:
-            return ratioForCategory(ageBandRatios[bandIndex], static_cast<BmiCategoryCode>(type));
+            return distribution.obesity;
         default:
             return 0.0;
     }
+}
+
+AgeBandDistribution SHealth::getAgeBandDistribution(int ageClass) const {
+    const int bandIndex = ageBandIndexFromClass(ageClass);
+    if (bandIndex < 0) {
+        return {};
+    }
+    const AgeBandRatios& ratios = ageBandRatios[bandIndex];
+    return {ratios.underweight, ratios.normal, ratios.overweight, ratios.obesity};
 }
 
 std::vector<std::string> SHealth::split(const std::string& line, char delimiter) {

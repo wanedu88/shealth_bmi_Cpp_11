@@ -34,10 +34,21 @@ enum class BmiCategoryCode : int {
     Obesity = 400
 };
 
+// F-09: 연령대별 4분류 BMI 분포 비율(%) — getBmiRatio와 동일 값
+struct AgeBandDistribution {
+    double underweight = 0.0;
+    double normal = 0.0;
+    double overweight = 0.0;
+    double obesity = 0.0;
+};
+
 class SHealth {
 public:
     int calculateBmi(const std::string& filename);
     double getBmiRatio(int ageClass, int type);
+
+    // ageClass ∈ {20, 30, …, 70} 만 유효; 그 외(19, 25, 80 등)는 전부 0.0 반환
+    AgeBandDistribution getAgeBandDistribution(int ageClass) const;
 
 private:
     enum class BmiClassSlot { None, Underweight, Normal, Overweight, Obesity };

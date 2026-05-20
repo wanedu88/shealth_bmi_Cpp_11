@@ -116,6 +116,11 @@ double ratioSumForBand(SHealth& health, int ageClass) {
            health.getBmiRatio(ageClass, static_cast<int>(BmiCategoryCode::Obesity));
 }
 
+double distributionSum(const AgeBandDistribution& distribution) {
+    return distribution.underweight + distribution.normal + distribution.overweight +
+           distribution.obesity;
+}
+
 void expectSingleBandCategory(SHealth& health,
                               int count,
                               int ageClass,
@@ -365,4 +370,34 @@ TEST_F(SHealthBMITest, TC_31_Recalculate_OverwritesStats) {
     EXPECT_NEAR(0.0,
                 health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Normal)),
                 1e-2);
+}
+
+TEST_F(SHealthBMITest, TC_33_GetAgeBandDistribution_ThreeCategories) {
+    // Given: 20대 3명 — 저체중/정상/과체중 각 1명 (170cm)
+    const std::string path = fixturePath("tc33_three_categories_20s.csv");
+    // When:  calculateBmi(path) → getAgeBandDistribution(20)
+    const int count = health.calculateBmi(path);
+    const AgeBandDistribution dist = health.getAgeBandDistribution(20);
+    // Then:  각 ~33.33%, 비만 0%, 합≈100; getBmiRatio와 일치
+    EXPECT_EQ(3, count);
+    EXPECT_NEAR(33.33, dist.underweight, 1e-2);
+    EXPECT_NEAR(33.33, dist.normal, 1e-2);
+    EXPECT_NEAR(33.33, dist.overweight, 1e-2);
+    EXPECT_NEAR(0.0, dist.obesity, 1e-2);
+    EXPECT_NEAR(100.0, distributionSum(dist), 1e-2);
+    EXPECT_NEAR(dist.underweight,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Underweight)),
+                1e-4);
+    EXPECT_NEAR(dist.normal,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Normal)),
+                1e-4);
+    EXPECT_NEAR(dist.overweight,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Overweight)),
+                1e-4);
+    // 잘못된 ageClass(25) → 전부 0
+    const AgeBandDistribution invalid = health.getAgeBandDistribution(25);
+    EXPECT_DOUBLE_EQ(0.0, invalid.underweight);
+    EXPECT_DOUBLE_EQ(0.0, invalid.normal);
+    EXPECT_DOUBLE_EQ(0.0, invalid.overweight);
+    EXPECT_DOUBLE_EQ(0.0, invalid.obesity);
 }

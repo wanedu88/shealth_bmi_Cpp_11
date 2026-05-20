@@ -11,18 +11,12 @@ int main() {
     SHealth shealth;
     shealth.calculateBmi(kDefaultDataFile);
 
-    const int underweightCode = static_cast<int>(BmiCategoryCode::Underweight);
-    const int normalCode = static_cast<int>(BmiCategoryCode::Normal);
-    const int overweightCode = static_cast<int>(BmiCategoryCode::Overweight);
-    const int obesityCode = static_cast<int>(BmiCategoryCode::Obesity);
-
     for (int bandIndex = 0; bandIndex < SHealthConstants::kAgeBandCount; bandIndex++) {
         const int ageBandStart =
             SHealthConstants::kAgeBandStartMin + bandIndex * SHealthConstants::kAgeBandStep;
-        printf(kAgeBandRatioFormat, ageBandStart, shealth.getBmiRatio(ageBandStart, underweightCode),
-               shealth.getBmiRatio(ageBandStart, normalCode),
-               shealth.getBmiRatio(ageBandStart, overweightCode),
-               shealth.getBmiRatio(ageBandStart, obesityCode));
+        const AgeBandDistribution dist = shealth.getAgeBandDistribution(ageBandStart);
+        printf(kAgeBandRatioFormat, ageBandStart, dist.underweight, dist.normal, dist.overweight,
+               dist.obesity);
     }
 
     return 0;
