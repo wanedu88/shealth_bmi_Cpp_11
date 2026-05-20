@@ -23,28 +23,34 @@ int SHealth::calculateBmi(const std::string& filename) {
     if (!loadRecordsFromFile(filename)) {
         return 0;
     }
-    imputeMissingWeightsByAgeBand();
-    computeAllBmis();
-    aggregateRatiosByAgeBand();
+    runBmiPipeline();
     return recordCount;
 }
 
+void SHealth::runBmiPipeline() {
+    imputeMissingWeightsByAgeBand();
+    computeAllBmis();
+    aggregateRatiosByAgeBand();
+}
+
 bool SHealth::loadRecordsFromFile(const std::string& filename) {
-    recordCount = 0;
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << filename << std::endl;
         return false;
     }
+    return loadFromStream(file);
+}
 
+bool SHealth::loadFromStream(std::istream& input) {
+    recordCount = 0;
     std::string line;
-    std::getline(file, line); // 첫번째 줄 읽기 (헤더)
-    while (std::getline(file, line)) {
+    std::getline(input, line);  // header
+    while (std::getline(input, line)) {
         if (!parseAndStoreLine(line)) {
             break;
         }
     }
-    file.close();
     return true;
 }
 

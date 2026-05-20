@@ -1,5 +1,6 @@
 #pragma once
 
+#include <istream>
 #include <string>
 #include <vector>
 
@@ -55,17 +56,22 @@ private:
     double bmis[10000];
     AgeBandRatios ageBandRatios[SHealthConstants::kAgeBandCount];
 
+    // --- Parser: CSV load (DIP — stream vs file) ---
     bool loadRecordsFromFile(const std::string& filename);
+    bool loadFromStream(std::istream& input);
     bool parseAndStoreLine(const std::string& line);
+    std::vector<std::string> split(const std::string& line, char delimiter);
+
+    // --- Domain + Statistics pipeline ---
+    void runBmiPipeline();
     void imputeMissingWeightsByAgeBand();
     void computeAllBmis();
     BmiClassSlot classifyBmi(double bmi) const;
     void aggregateRatiosByAgeBand();
 
+    // --- Query helpers ---
     bool isInAgeBand(int age, int ageBandStart) const;
     int ageBandIndexFromStart(int ageBandStart) const;
     int ageBandIndexFromClass(int ageClass) const;
     double ratioForCategory(const AgeBandRatios& ratios, BmiCategoryCode category) const;
-
-    std::vector<std::string> split(const std::string& line, char delimiter);
 };
