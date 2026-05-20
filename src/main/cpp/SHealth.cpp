@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 
+using SHealthConstants::kAgeBandCount;
 using SHealthConstants::kAgeBandStartMax;
 using SHealthConstants::kAgeBandStartMin;
 using SHealthConstants::kAgeBandStep;
@@ -59,13 +60,31 @@ bool SHealth::parseAndStoreLine(const std::string& line) {
     return true;
 }
 
+bool SHealth::isInAgeBand(int age, int ageBandStart) const {
+    return age >= ageBandStart && age < ageBandStart + kAgeBandWidth;
+}
+
+int SHealth::ageBandIndexFromStart(int ageBandStart) const {
+    return (ageBandStart - kAgeBandStartMin) / kAgeBandStep;
+}
+
+int SHealth::ageBandIndexFromClass(int ageClass) const {
+    if (ageClass < kAgeBandStartMin || ageClass > kAgeBandStartMax) {
+        return -1;
+    }
+    if ((ageClass - kAgeBandStartMin) % kAgeBandStep != 0) {
+        return -1;
+    }
+    return ageBandIndexFromStart(ageClass);
+}
+
 void SHealth::imputeMissingWeightsByAgeBand() {
     for (int ageBandStart = kAgeBandStartMin; ageBandStart <= kAgeBandStartMax;
          ageBandStart += kAgeBandStep) {
         double weightSum = 0;
         int nonZeroWeightCount = 0;
         for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
-            if (ages[recordIndex] >= ageBandStart && ages[recordIndex] < ageBandStart + kAgeBandWidth) {
+            if (isInAgeBand(ages[recordIndex], ageBandStart)) {
                 if (weights[recordIndex] == kMissingWeight) {
                     continue;
                 }
@@ -74,10 +93,9 @@ void SHealth::imputeMissingWeightsByAgeBand() {
             }
         }
         for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
-            if (ages[recordIndex] >= ageBandStart && ages[recordIndex] < ageBandStart + kAgeBandWidth) {
-                if (weights[recordIndex] == kMissingWeight) {
-                    weights[recordIndex] = weightSum / nonZeroWeightCount;
-                }
+            if (isInAgeBand(ages[recordIndex], ageBandStart) &&
+                weights[recordIndex] == kMissingWeight) {
+                weights[recordIndex] = weightSum / nonZeroWeightCount;
             }
         }
     }
@@ -107,15 +125,15 @@ SHealth::BmiClassSlot SHealth::classifyBmi(double bmi) const {
 }
 
 void SHealth::aggregateRatiosByAgeBand() {
-    for (int ageBandStart = kAgeBandStartMin; ageBandStart <= kAgeBandStartMax;
-         ageBandStart += kAgeBandStep) {
+    for (int bandIndex = 0; bandIndex < kAgeBandCount; bandIndex++) {
+        const int ageBandStart = kAgeBandStartMin + bandIndex * kAgeBandStep;
         int underweightCount = 0;
         int normalweightCount = 0;
         int overweightCount = 0;
         int obesityCount = 0;
         int bandMemberCount = 0;
         for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
-            if (ages[recordIndex] >= ageBandStart && ages[recordIndex] < ageBandStart + kAgeBandWidth) {
+            if (isInAgeBand(ages[recordIndex], ageBandStart)) {
                 bandMemberCount++;
                 switch (classifyBmi(bmis[recordIndex])) {
                     case BmiClassSlot::Underweight:
@@ -135,87 +153,42 @@ void SHealth::aggregateRatiosByAgeBand() {
                 }
             }
         }
-        if (ageBandStart == kAgeBandStartMin) {
-            underweight20 = (double)underweightCount * kPercentMultiplier / bandMemberCount;
-            normalweight20 = (double)normalweightCount * kPercentMultiplier / bandMemberCount;
-            overweight20 = (double)overweightCount * kPercentMultiplier / bandMemberCount;
-            obesity20 = (double)obesityCount * kPercentMultiplier / bandMemberCount;
-        } else if (ageBandStart == kAgeBandStartMin + kAgeBandStep) {
-            underweight30 = (double)underweightCount * kPercentMultiplier / bandMemberCount;
-            normalweight30 = (double)normalweightCount * kPercentMultiplier / bandMemberCount;
-            overweight30 = (double)overweightCount * kPercentMultiplier / bandMemberCount;
-            obesity30 = (double)obesityCount * kPercentMultiplier / bandMemberCount;
-        } else if (ageBandStart == kAgeBandStartMin + 2 * kAgeBandStep) {
-            underweight40 = (double)underweightCount * kPercentMultiplier / bandMemberCount;
-            normalweight40 = (double)normalweightCount * kPercentMultiplier / bandMemberCount;
-            overweight40 = (double)overweightCount * kPercentMultiplier / bandMemberCount;
-            obesity40 = (double)obesityCount * kPercentMultiplier / bandMemberCount;
-        } else if (ageBandStart == kAgeBandStartMin + 3 * kAgeBandStep) {
-            underweight50 = (double)underweightCount * kPercentMultiplier / bandMemberCount;
-            normalweight50 = (double)normalweightCount * kPercentMultiplier / bandMemberCount;
-            overweight50 = (double)overweightCount * kPercentMultiplier / bandMemberCount;
-            obesity50 = (double)obesityCount * kPercentMultiplier / bandMemberCount;
-        } else if (ageBandStart == kAgeBandStartMin + 4 * kAgeBandStep) {
-            underweight60 = (double)underweightCount * kPercentMultiplier / bandMemberCount;
-            normalweight60 = (double)normalweightCount * kPercentMultiplier / bandMemberCount;
-            overweight60 = (double)overweightCount * kPercentMultiplier / bandMemberCount;
-            obesity60 = (double)obesityCount * kPercentMultiplier / bandMemberCount;
-        } else if (ageBandStart == kAgeBandStartMin + 5 * kAgeBandStep) {
-            underweight70 = (double)underweightCount * kPercentMultiplier / bandMemberCount;
-            normalweight70 = (double)normalweightCount * kPercentMultiplier / bandMemberCount;
-            overweight70 = (double)overweightCount * kPercentMultiplier / bandMemberCount;
-            obesity70 = (double)obesityCount * kPercentMultiplier / bandMemberCount;
-        }
+        AgeBandRatios& ratios = ageBandRatios[bandIndex];
+        ratios.underweight = (double)underweightCount * kPercentMultiplier / bandMemberCount;
+        ratios.normal = (double)normalweightCount * kPercentMultiplier / bandMemberCount;
+        ratios.overweight = (double)overweightCount * kPercentMultiplier / bandMemberCount;
+        ratios.obesity = (double)obesityCount * kPercentMultiplier / bandMemberCount;
     }
 }
 
-double SHealth::getBmiRatio(int ageClass, int type) {
-    const int categoryCode = type;
-    const int underweightCode = static_cast<int>(BmiCategoryCode::Underweight);
-    const int normalCode = static_cast<int>(BmiCategoryCode::Normal);
-    const int overweightCode = static_cast<int>(BmiCategoryCode::Overweight);
-    const int obesityCode = static_cast<int>(BmiCategoryCode::Obesity);
-
-    if (ageClass == kAgeBandStartMin && categoryCode == underweightCode) return underweight20;
-    else if (ageClass == kAgeBandStartMin && categoryCode == normalCode) return normalweight20;
-    else if (ageClass == kAgeBandStartMin && categoryCode == overweightCode) return overweight20;
-    else if (ageClass == kAgeBandStartMin && categoryCode == obesityCode) return obesity20;
-    else if (ageClass == kAgeBandStartMin + kAgeBandStep && categoryCode == underweightCode)
-        return underweight30;
-    else if (ageClass == kAgeBandStartMin + kAgeBandStep && categoryCode == normalCode)
-        return normalweight30;
-    else if (ageClass == kAgeBandStartMin + kAgeBandStep && categoryCode == overweightCode)
-        return overweight30;
-    else if (ageClass == kAgeBandStartMin + kAgeBandStep && categoryCode == obesityCode) return obesity30;
-    else if (ageClass == kAgeBandStartMin + 2 * kAgeBandStep && categoryCode == underweightCode)
-        return underweight40;
-    else if (ageClass == kAgeBandStartMin + 2 * kAgeBandStep && categoryCode == normalCode)
-        return normalweight40;
-    else if (ageClass == kAgeBandStartMin + 2 * kAgeBandStep && categoryCode == overweightCode)
-        return overweight40;
-    else if (ageClass == kAgeBandStartMin + 2 * kAgeBandStep && categoryCode == obesityCode) return obesity40;
-    else if (ageClass == kAgeBandStartMin + 3 * kAgeBandStep && categoryCode == underweightCode)
-        return underweight50;
-    else if (ageClass == kAgeBandStartMin + 3 * kAgeBandStep && categoryCode == normalCode)
-        return normalweight50;
-    else if (ageClass == kAgeBandStartMin + 3 * kAgeBandStep && categoryCode == overweightCode)
-        return overweight50;
-    else if (ageClass == kAgeBandStartMin + 3 * kAgeBandStep && categoryCode == obesityCode) return obesity50;
-    else if (ageClass == kAgeBandStartMin + 4 * kAgeBandStep && categoryCode == underweightCode)
-        return underweight60;
-    else if (ageClass == kAgeBandStartMin + 4 * kAgeBandStep && categoryCode == normalCode)
-        return normalweight60;
-    else if (ageClass == kAgeBandStartMin + 4 * kAgeBandStep && categoryCode == overweightCode)
-        return overweight60;
-    else if (ageClass == kAgeBandStartMin + 4 * kAgeBandStep && categoryCode == obesityCode) return obesity60;
-    else if (ageClass == kAgeBandStartMin + 5 * kAgeBandStep && categoryCode == underweightCode)
-        return underweight70;
-    else if (ageClass == kAgeBandStartMin + 5 * kAgeBandStep && categoryCode == normalCode)
-        return normalweight70;
-    else if (ageClass == kAgeBandStartMin + 5 * kAgeBandStep && categoryCode == overweightCode)
-        return overweight70;
-    else if (ageClass == kAgeBandStartMin + 5 * kAgeBandStep && categoryCode == obesityCode) return obesity70;
+double SHealth::ratioForCategory(const AgeBandRatios& ratios, BmiCategoryCode category) const {
+    switch (category) {
+        case BmiCategoryCode::Underweight:
+            return ratios.underweight;
+        case BmiCategoryCode::Normal:
+            return ratios.normal;
+        case BmiCategoryCode::Overweight:
+            return ratios.overweight;
+        case BmiCategoryCode::Obesity:
+            return ratios.obesity;
+    }
     return 0.0;
+}
+
+double SHealth::getBmiRatio(int ageClass, int type) {
+    const int bandIndex = ageBandIndexFromClass(ageClass);
+    if (bandIndex < 0) {
+        return 0.0;
+    }
+    switch (static_cast<BmiCategoryCode>(type)) {
+        case BmiCategoryCode::Underweight:
+        case BmiCategoryCode::Normal:
+        case BmiCategoryCode::Overweight:
+        case BmiCategoryCode::Obesity:
+            return ratioForCategory(ageBandRatios[bandIndex], static_cast<BmiCategoryCode>(type));
+        default:
+            return 0.0;
+    }
 }
 
 std::vector<std::string> SHealth::split(const std::string& line, char delimiter) {
