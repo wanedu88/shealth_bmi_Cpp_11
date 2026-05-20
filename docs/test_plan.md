@@ -5,7 +5,7 @@
 | 문서 버전 | 1.0 |
 | 작성 기준 | README Activities §3, `docs/requirements_analysis.md` §4, `.cursorrules` |
 | 대상 코드 | `SHealth.h`, `SHealth.cpp` (`shealth_lib`) |
-| 구현 상태 | **계획만** — `SHealthBMITest.cpp` 미구현 (`FailedTest` 스텁 존재) |
+| 구현 상태 | **0단계 완료** — `TEST_F` 골격·헬퍼·`test/fixtures/`; 비즈니스 TC(01~31) Planned |
 
 ---
 
@@ -124,10 +124,10 @@ protected:
 
 | ID | 영역 | TEST_F (예) | Given 요약 | When | Then 요약 | 픽스처 | P | 상태 |
 |----|------|-------------|------------|------|-----------|--------|---|------|
-| 01 | BMI | `TC_01_CalculatesBmi_NormalInput` | 70kg, 170cm, 20대 1명 | `calculateBmi` | BMI≈24.22 → 단일 분류 비율 100% | `tc01_bmi_normal.csv` | P0 | Planned |
-| 02 | BMI | `TC_02_CalculatesBmi_Height100cm` | 70kg, 100cm | 동일 | BMI=70.0 | `tc02_height_100.csv` | P0 | Planned |
-| 03 | BMI | `TC_03_CalculatesBmi_ReadmeSample` | 79.5kg, 158.3cm | 동일 | BMI≈31.72 | `tc03_readme_sample.csv` | P0 | Planned |
-| 04 | BMI | `TC_04_CalculatesBmi_LargeHeight` | 유효 큰 height | 동일 | BMI 유한·>0 | `tc04_large_height.csv` | P1 | Planned |
+| 01 | BMI | `TC_01_CalculatesBmi_NormalInput` | 70kg, 170cm, 20대 1명 | `calculateBmi` | BMI≈24.22 → 단일 분류 비율 100% | `tc01_bmi_normal.csv` | P0 | Implemented |
+| 02 | BMI | `TC_02_CalculatesBmi_Height100cm` | 70kg, 100cm | 동일 | BMI=70.0 | `tc02_height_100.csv` | P0 | Implemented |
+| 03 | BMI | `TC_03_CalculatesBmi_ReadmeSample` | 79.5kg, 158.3cm | 동일 | BMI≈31.72 | `tc03_readme_sample.csv` | P0 | Implemented |
+| 04 | BMI | `TC_04_CalculatesBmi_LargeHeight` | 유효 큰 height | 동일 | BMI 유한·>0 | `tc04_large_height.csv` | P1 | Implemented |
 | 05 | 예외 | `TC_05_HeightZero_CurrentBehavior` | height=0 | `calculateBmi` | inf/NaN/None **현재 스냅샷** | `tc05_height_zero.csv` | P1 | Planned |
 | 06 | 보정 | `TC_06_ImputesWeight_BandAverage` | 20대 50,60,0 | 동일 | 0→55, BMI 일치 | `tc06_impute_three.csv` | P0 | Planned |
 | 07 | 보정 | `TC_07_AllWeightsZero_DivideByZero` | 연령대 전원 0 | 동일 | 0/NaN **스냅샷** (수정 별도) | `tc07_all_zero.csv` | P0 | Planned |
@@ -407,8 +407,8 @@ flowchart TD
 
 | 단계 | 작업 | TC | 산출 |
 |------|------|-----|------|
-| 0 | 픽스처·`SHealthBMITest` 골격 | — | `test/fixtures/`, ctest Green |
-| 1 | BMI 계산 | 01~04 | §4 Implemented |
+| 0 | 픽스처·`SHealthBMITest` 골격 | — | `test/fixtures/`, ctest Green — **완료** |
+| 1 | BMI 계산 | 01~04 | §4 Implemented — **완료** |
 | 2 | Age 보정 | 06~10 | §5 Implemented |
 | 3 | 분류 | 11~18 | §6 Implemented (16=Red 허용) |
 | 4 | 예외 | 05,22~26,31 | §7 Implemented |
@@ -437,9 +437,9 @@ flowchart TD
 
 ### 인프라 완료 조건 (선행)
 
-- [ ] `FailedTest` / `FAIL()` 제거
-- [ ] `TEST_F` + Given-When-Then
-- [ ] `ctest --output-on-failure` 전체 Green
+- [x] `FailedTest` / `FAIL()` 제거
+- [x] `TEST_F` + Given-When-Then (인프라 TC 2건; 비즈니스 TC는 후속 단계)
+- [x] `ctest --output-on-failure` 전체 Green
 
 ---
 
@@ -470,7 +470,7 @@ flowchart TD
 | 27~28 | shealth.dat 스모크 | 통합 |
 | 29~30 | 대용량·음수 | 요구 확정 후 |
 | 33~36 | F-09~F-12 | README 4. 기능 개선 |
-| 37 | FAIL 스텁 제거 | 인프라 0단계 |
+| 37 | FAIL 스텁 제거 | 인프라 0단계 — **완료** |
 
 ---
 
