@@ -16,6 +16,7 @@ constexpr int kAgeBandStep = 10;
 constexpr int kAgeBandWidth = 10;
 constexpr int kAgeBandCount = (kAgeBandStartMax - kAgeBandStartMin) / kAgeBandStep + 1;
 
+constexpr int kCsvColId = 0;
 constexpr int kCsvColAge = 1;
 constexpr int kCsvColWeight = 2;
 constexpr int kCsvColHeight = 3;
@@ -51,6 +52,9 @@ public:
     // ageClass ∈ {20, 30, …, 70} 만 유효; 그 외(19, 25, 80 등)는 전부 0.0 반환
     AgeBandDistribution getAgeBandDistribution(int ageClass) const;
 
+    // F-11: classifyBmi Normal 슬롯(18.5 < BMI < 23) 사용자 ID 목록
+    std::vector<int> getNormalBmiUserIds() const;
+
 private:
     enum class BmiClassSlot { None, Underweight, Normal, Overweight, Obesity };
 
@@ -62,6 +66,7 @@ private:
     };
 
     int recordCount = 0;
+    int ids[10000];
     int ages[10000];
     double heights[10000];
     double weights[10000];

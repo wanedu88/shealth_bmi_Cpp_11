@@ -19,5 +19,12 @@ int main() {
                dist.obesity);
     }
 
+    const std::vector<int> normalIds = shealth.getNormalBmiUserIds();
+    printf("Normal BMI users (%zu):", normalIds.size());
+    for (const int userId : normalIds) {
+        printf(" %d", userId);
+    }
+    printf("\n");
+
     return 0;
 }

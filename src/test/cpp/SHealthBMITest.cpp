@@ -416,3 +416,17 @@ TEST_F(SHealthBMITest, TC_33_GetAgeBandDistribution_ThreeCategories) {
     EXPECT_DOUBLE_EQ(0.0, invalid.overweight);
     EXPECT_DOUBLE_EQ(0.0, invalid.obesity);
 }
+
+TEST_F(SHealthBMITest, TC_35_GetNormalBmiUserIds_TwoOfThree) {
+    // Given: 3명 — 저체중(101) 1명, 정상(102,103) 2명 (170cm)
+    EXPECT_TRUE(health.getNormalBmiUserIds().empty());
+    const std::string path = fixturePath("tc35_normal_bmi_users.csv");
+    // When:  calculateBmi(path) → getNormalBmiUserIds()
+    const int count = health.calculateBmi(path);
+    const std::vector<int> normalIds = health.getNormalBmiUserIds();
+    // Then:  size==2, ID {102,103} (F-11: classifyBmi Normal과 동일)
+    EXPECT_EQ(3, count);
+    ASSERT_EQ(2u, normalIds.size());
+    EXPECT_EQ(102, normalIds[0]);
+    EXPECT_EQ(103, normalIds[1]);
+}

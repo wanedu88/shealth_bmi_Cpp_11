@@ -12,6 +12,7 @@ using SHealthConstants::kBmiNormalMax;
 using SHealthConstants::kBmiOverweightMax;
 using SHealthConstants::kBmiUnderMax;
 using SHealthConstants::kCsvColAge;
+using SHealthConstants::kCsvColId;
 using SHealthConstants::kCsvColHeight;
 using SHealthConstants::kCsvColWeight;
 using SHealthConstants::kCsvDelimiter;
@@ -61,6 +62,7 @@ bool SHealth::parseAndStoreLine(const std::string& line) {
     if (tokens.empty()) {
         return false;
     }
+    ids[recordCount] = std::stoi(tokens[kCsvColId]);
     ages[recordCount] = std::stoi(tokens[kCsvColAge]);
     weights[recordCount] = std::stod(tokens[kCsvColWeight]);
     heights[recordCount] = std::stod(tokens[kCsvColHeight]);
@@ -232,6 +234,16 @@ AgeBandDistribution SHealth::getAgeBandDistribution(int ageClass) const {
     }
     const AgeBandRatios& ratios = ageBandRatios[bandIndex];
     return {ratios.underweight, ratios.normal, ratios.overweight, ratios.obesity};
+}
+
+std::vector<int> SHealth::getNormalBmiUserIds() const {
+    std::vector<int> normalIds;
+    for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
+        if (classifyBmi(bmis[recordIndex]) == BmiClassSlot::Normal) {
+            normalIds.push_back(ids[recordIndex]);
+        }
+    }
+    return normalIds;
 }
 
 std::vector<std::string> SHealth::split(const std::string& line, char delimiter) {
