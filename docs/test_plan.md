@@ -5,7 +5,7 @@
 | 문서 버전 | 1.0 |
 | 작성 기준 | README Activities §3, `docs/requirements_analysis.md` §4, `.cursorrules` |
 | 대상 코드 | `SHealth.h`, `SHealth.cpp` (`shealth_lib`) |
-| 구현 상태 | **0단계 완료** — `TEST_F` 골격·헬퍼·`test/fixtures/`; 비즈니스 TC(01~31) Planned |
+| 구현 상태 | **§9 0~4단계 완료** — TC 24건 Implemented; **TC_16 Red**; Green 턴(§9-5) 대기 |
 
 ---
 
@@ -128,7 +128,7 @@ protected:
 | 02 | BMI | `TC_02_CalculatesBmi_Height100cm` | 70kg, 100cm | 동일 | BMI=70.0 | `tc02_height_100.csv` | P0 | Implemented |
 | 03 | BMI | `TC_03_CalculatesBmi_ReadmeSample` | 79.5kg, 158.3cm | 동일 | BMI≈31.72 | `tc03_readme_sample.csv` | P0 | Implemented |
 | 04 | BMI | `TC_04_CalculatesBmi_LargeHeight` | 유효 큰 height | 동일 | BMI 유한·>0 | `tc04_large_height.csv` | P1 | Implemented |
-| 05 | 예외 | `TC_05_HeightZero_CurrentBehavior` | height=0 | `calculateBmi` | inf/NaN/None **현재 스냅샷** | `tc05_height_zero.csv` | P1 | Planned |
+| 05 | 예외 | `TC_05_HeightZero_CurrentBehavior` | height=0 | `calculateBmi` | inf/NaN/None **현재 스냅샷** | `tc05_height_zero.csv` | P1 | Implemented |
 | 06 | 보정 | `TC_06_ImputesWeight_BandAverage` | 20대 50,60,0 | 동일 | 0→55, BMI 일치 | `tc06_impute_three.csv` | P0 | Implemented |
 | 07 | 보정 | `TC_07_AllWeightsZero_DivideByZero` | 연령대 전원 0 | 동일 | 0/NaN **스냅샷** (수정 별도) | `tc07_all_zero.csv` | P0 | Implemented |
 | 08 | 보정 | `TC_08_IsolatesAgeBands` | 20대·30대 분리 | 동일 | 30대 0에 20대 평균 미적용 | `tc08_band_isolation.csv` | P0 | Implemented |
@@ -142,12 +142,12 @@ protected:
 | 16 | 분류 | `TC_16_Boundary_Obesity_25` | BMI=25.0 | 동일 | 비만 100% (400) | `tc16_bmi_25.csv` | P0 | **Red** |
 | 17 | 분류 | `TC_17_Boundary_Obesity_30` | BMI=30.0 | 동일 | 비만 100% | `tc17_bmi_30.csv` | P0 | Implemented |
 | 18 | 분류 | `TC_18_Classification_ExclusiveComplete` | 20대 4분류 각 1명 | 동일 | 각 25%, 합≈100 (TC_16 Red 시 합 75%) | `tc18_four_categories.csv` | P0 | Implemented |
-| 22 | 예외 | `TC_22_InvalidAgeClassAndType` | 잘못된 API 인자 | `getBmiRatio` | 0.0 | (픽스처 불필요) | P1 | Planned |
-| 23 | 예외 | `TC_23_GetBmiRatio_BeforeCalculate` | 초기 상태 | `getBmiRatio` | 0.0 | — | P1 | Planned |
-| 24 | 예외 | `TC_24_FileNotFound` | 없는 경로 | `calculateBmi` | return 0 | — | P0 | Planned |
-| 25 | 예외 | `TC_25_HeaderOnlyCsv` | 헤더만 | `calculateBmi` | return 0 | `tc25_header_only.csv` | P0 | Planned |
-| 26 | 예외 | `TC_26_ParseStops_OnBadLine` | 빈 줄/토큰 부족 | `calculateBmi` | 중단 시 recordCount 고정 | `tc26_bad_line.csv` | P1 | Planned |
-| 31 | 예외 | `TC_31_Recalculate_OverwritesStats` | 2개 다른 CSV | `calculateBmi`×2 | 두 번째 결과만 유효 | `tc31_a.csv`, `tc31_b.csv` | P1 | Planned |
+| 22 | 예외 | `TC_22_InvalidAgeClassAndType` | 잘못된 API 인자 | `getBmiRatio` | 0.0 | (픽스처 불필요) | P1 | Implemented |
+| 23 | 예외 | `TC_23_GetBmiRatio_BeforeCalculate` | 초기 상태 | `getBmiRatio` | 0.0 | — | P1 | Implemented |
+| 24 | 예외 | `TC_24_FileNotFound` | 없는 경로 | `calculateBmi` | return 0 | — | P0 | Implemented |
+| 25 | 예외 | `TC_25_HeaderOnlyCsv` | 헤더만 | `calculateBmi` | return 0 | `tc25_header_only.csv` | P0 | Implemented |
+| 26 | 예외 | `TC_26_ParseStops_OnBadLine` | 빈 줄/토큰 부족 | `calculateBmi` | 중단 시 recordCount 고정 | `tc26_bad_line.csv` | P1 | Implemented |
+| 31 | 예외 | `TC_31_Recalculate_OverwritesStats` | 2개 다른 CSV | `calculateBmi`×2 | 두 번째 결과만 유효 | `tc31_a.csv`, `tc31_b.csv` | P1 | Implemented |
 
 **범례 — 상태**: Planned / Implemented / **Red** (README 기준 실패 예상)
 
@@ -411,7 +411,7 @@ flowchart TD
 | 1 | BMI 계산 | 01~04 | §4 Implemented — **완료** |
 | 2 | Age 보정 | 06~10 | §5 Implemented — **완료** |
 | 3 | 분류 | 11~18 | §6 Implemented (16=Red) — **완료** |
-| 4 | 예외 | 05,22~26,31 | §7 Implemented |
+| 4 | 예외 | 05,22~26,31 | §7 Implemented — **완료** |
 | 5 | TDD Green | 16 | §8 해소 |
 | 6 | 회귀 | 18, 전체 | §3 상태 일괄 갱신 |
 
@@ -433,7 +433,7 @@ flowchart TD
 | 75 | BMI 계산 로직 TC | 01, 02, 03, 04, (05) | 01~04 ctest Green |
 | 76 | Age 평균치 보정 로직 TC | 06, 07, 08, 09, 10 | 06~10 ctest Green (07 스냅샷 포함) |
 | 77 | 정상/저체중/과체중/비만 분류 TC | 11~18 | 11~15,17~18 Green; **16 Green 턴** |
-| 78 | 예외상황 TC | 05, 22, 23, 24, 25, 26, 31 | 해당 TC ctest Green |
+| 78 | 예외상황 TC | 05, 22, 23, 24, 25, 26, 31 | 해당 TC ctest Green — **완료** (TC_16 Red 제외) |
 
 ### 인프라 완료 조건 (선행)
 

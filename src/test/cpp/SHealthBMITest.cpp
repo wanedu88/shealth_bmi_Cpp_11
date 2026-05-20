@@ -287,3 +287,83 @@ TEST_F(SHealthBMITest, TC_18_Classification_ExclusiveComplete) {
                 1e-2);
     EXPECT_NEAR(100.0, ratioSumForBand(health, 20), 1e-2);
 }
+
+TEST_F(SHealthBMITest, TC_05_HeightZero_CurrentBehavior) {
+    // Given: height=0 (height_m=0 → BMI inf)
+    const std::string path = fixturePath("tc05_height_zero.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  스냅샷 — inf → bmi>25 → 비만 100% (F-10 전까지 고정)
+    EXPECT_EQ(1, count);
+    EXPECT_NEAR(100.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Obesity)),
+                1e-2);
+}
+
+TEST_F(SHealthBMITest, TC_22_InvalidAgeClassAndType) {
+    // Given: calculateBmi 완료 (tc01)
+    ASSERT_EQ(1, health.calculateBmi(fixturePath("tc01_bmi_normal.csv")));
+    // When:  잘못된 ageClass / type
+    // Then:  각 0.0
+    EXPECT_DOUBLE_EQ(0.0, health.getBmiRatio(19, 100));
+    EXPECT_DOUBLE_EQ(0.0, health.getBmiRatio(80, 100));
+    EXPECT_DOUBLE_EQ(0.0, health.getBmiRatio(20, 0));
+    EXPECT_DOUBLE_EQ(0.0, health.getBmiRatio(20, 500));
+}
+
+TEST_F(SHealthBMITest, TC_23_GetBmiRatio_BeforeCalculate) {
+    // Given: 기본 생성 SHealth (calculateBmi 미호출)
+    // When:  getBmiRatio(20, 200)
+    const double ratio = health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Normal));
+    // Then:  0.0
+    EXPECT_DOUBLE_EQ(0.0, ratio);
+}
+
+TEST_F(SHealthBMITest, TC_24_FileNotFound) {
+    // Given: 존재하지 않는 경로
+    const std::string path = fixturePath("no_such_file.dat");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  return 0
+    EXPECT_EQ(0, count);
+}
+
+TEST_F(SHealthBMITest, TC_25_HeaderOnlyCsv) {
+    // Given: 헤더만 있는 CSV
+    const std::string path = fixturePath("tc25_header_only.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  return 0
+    EXPECT_EQ(0, count);
+}
+
+TEST_F(SHealthBMITest, TC_26_ParseStops_OnBadLine) {
+    // Given: 유효 1행 후 빈 줄(파싱 중단)
+    const std::string path = fixturePath("tc26_bad_line.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  recordCount==1 (빈 줄에서 break, 이후 bad line 미처리)
+    EXPECT_EQ(1, count);
+    EXPECT_NEAR(100.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Overweight)),
+                1e-2);
+}
+
+TEST_F(SHealthBMITest, TC_31_Recalculate_OverwritesStats) {
+    // Given: tc31_a(정상 100%), tc31_b(비만 100%)
+    const std::string pathA = fixturePath("tc31_a.csv");
+    const std::string pathB = fixturePath("tc31_b.csv");
+    // When:  calculateBmi(a) → calculateBmi(b)
+    ASSERT_EQ(1, health.calculateBmi(pathA));
+    EXPECT_NEAR(100.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Normal)),
+                1e-2);
+    ASSERT_EQ(1, health.calculateBmi(pathB));
+    // Then:  두 번째(b) 결과만 유효
+    EXPECT_NEAR(100.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Obesity)),
+                1e-2);
+    EXPECT_NEAR(0.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Normal)),
+                1e-2);
+}
