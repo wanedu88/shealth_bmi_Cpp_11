@@ -116,6 +116,16 @@ double ratioSumForBand(SHealth& health, int ageClass) {
            health.getBmiRatio(ageClass, static_cast<int>(BmiCategoryCode::Obesity));
 }
 
+void expectSingleBandCategory(SHealth& health,
+                              int count,
+                              int ageClass,
+                              BmiCategoryCode category) {
+    EXPECT_EQ(1, count);
+    EXPECT_NEAR(100.0,
+                health.getBmiRatio(ageClass, static_cast<int>(category)),
+                1e-2);
+}
+
 }  // namespace
 
 TEST_F(SHealthBMITest, TC_06_ImputesWeight_BandAverage) {
@@ -190,4 +200,90 @@ TEST_F(SHealthBMITest, TC_10_BmiChangesAfterImpute) {
     const double sum = ratioSumForBand(health, 20);
     EXPECT_GT(sum, 0.0);
     EXPECT_NEAR(100.0, sum, 1e-2);
+}
+
+TEST_F(SHealthBMITest, TC_11_Boundary_Underweight_18_5) {
+    // Given: height=170, weight=53.464 → BMI≤18.5 (53.465는 float에서 >18.5)
+    const std::string path = fixturePath("tc11_bmi_18_5.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  저체중 100% (code 100)
+    expectSingleBandCategory(health, count, 20, BmiCategoryCode::Underweight);
+}
+
+TEST_F(SHealthBMITest, TC_12_Boundary_Normal_Above18_5) {
+    // Given: weight=53.47 → BMI>18.5
+    const std::string path = fixturePath("tc12_bmi_normal_low.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  정상 100% (code 200)
+    expectSingleBandCategory(health, count, 20, BmiCategoryCode::Normal);
+}
+
+TEST_F(SHealthBMITest, TC_13_Boundary_Normal_Below23) {
+    // Given: weight=66.467 → BMI≈22.999 (<23)
+    const std::string path = fixturePath("tc13_bmi_normal_high.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  정상 100% (code 200)
+    expectSingleBandCategory(health, count, 20, BmiCategoryCode::Normal);
+}
+
+TEST_F(SHealthBMITest, TC_14_Boundary_Overweight_23) {
+    // Given: weight=66.47 → BMI=23.0
+    const std::string path = fixturePath("tc14_bmi_23.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  과체중 100% (code 300)
+    expectSingleBandCategory(health, count, 20, BmiCategoryCode::Overweight);
+}
+
+TEST_F(SHealthBMITest, TC_15_Boundary_Overweight_Below25) {
+    // Given: weight=72.22 → BMI≈24.999
+    const std::string path = fixturePath("tc15_bmi_24_99.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  과체중 100% (code 300)
+    expectSingleBandCategory(health, count, 20, BmiCategoryCode::Overweight);
+}
+
+TEST_F(SHealthBMITest, TC_16_Boundary_Obesity_25) {
+    // Given: weight=72.249 → BMI≈25.0 미만(과체중); 72.25는 float에서 >25 → 비만
+    // README 목표 BMI=25.0 비만; 현재 bmi>25 only → Red
+    const std::string path = fixturePath("tc16_bmi_25.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  비만 100% (code 400) — **Red**: 현재 bmi>25 only → None
+    expectSingleBandCategory(health, count, 20, BmiCategoryCode::Obesity);
+}
+
+TEST_F(SHealthBMITest, TC_17_Boundary_Obesity_30) {
+    // Given: weight=86.67 → BMI≈30.0
+    const std::string path = fixturePath("tc17_bmi_30.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  비만 100% (code 400)
+    expectSingleBandCategory(health, count, 20, BmiCategoryCode::Obesity);
+}
+
+TEST_F(SHealthBMITest, TC_18_Classification_ExclusiveComplete) {
+    // Given: 20대 4명 — 저체중/정상/과체중/비만 경계 weight 각 1명
+    const std::string path = fixturePath("tc18_four_categories.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  4분류 각 25%, 합≈100 (53.464/55/66.47/72.25; TC_16 Green 후 72.249→72.25 검토)
+    EXPECT_EQ(4, count);
+    EXPECT_NEAR(25.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Underweight)),
+                1e-2);
+    EXPECT_NEAR(25.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Normal)),
+                1e-2);
+    EXPECT_NEAR(25.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Overweight)),
+                1e-2);
+    EXPECT_NEAR(25.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Obesity)),
+                1e-2);
+    EXPECT_NEAR(100.0, ratioSumForBand(health, 20), 1e-2);
 }

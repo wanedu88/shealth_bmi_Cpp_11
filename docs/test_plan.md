@@ -134,14 +134,14 @@ protected:
 | 08 | 보정 | `TC_08_IsolatesAgeBands` | 20대·30대 분리 | 동일 | 30대 0에 20대 평균 미적용 | `tc08_band_isolation.csv` | P0 | Implemented |
 | 09 | 보정 | `TC_09_SingleValidSample` | 유효 1명+0 1명 | 동일 | 0→유효 체중 | `tc09_single_valid.csv` | P0 | Implemented |
 | 10 | 보정 | `TC_10_BmiChangesAfterImpute` | 0 포함 | 동일 | 보정 후 비율/BMI 변화 | `tc06` 변형 | P1 | Implemented |
-| 11 | 분류 | `TC_11_Boundary_Underweight_18_5` | BMI=18.5 | 동일 | 저체중 100% (code 100) | `tc11_bmi_18_5.csv` | P0 | Planned |
-| 12 | 분류 | `TC_12_Boundary_Normal_Above18_5` | BMI>18.5 | 동일 | 정상 100% (200) | `tc12_bmi_normal_low.csv` | P0 | Planned |
-| 13 | 분류 | `TC_13_Boundary_Normal_Below23` | BMI≈23−ε | 동일 | 정상 100% | `tc13_bmi_normal_high.csv` | P0 | Planned |
-| 14 | 분류 | `TC_14_Boundary_Overweight_23` | BMI=23.0 | 동일 | 과체중 100% (300) | `tc14_bmi_23.csv` | P0 | Planned |
-| 15 | 분류 | `TC_15_Boundary_Overweight_Below25` | BMI≈25−ε | 동일 | 과체중 100% | `tc15_bmi_24_99.csv` | P0 | Planned |
+| 11 | 분류 | `TC_11_Boundary_Underweight_18_5` | BMI=18.5 | 동일 | 저체중 100% (code 100) | `tc11_bmi_18_5.csv` | P0 | Implemented |
+| 12 | 분류 | `TC_12_Boundary_Normal_Above18_5` | BMI>18.5 | 동일 | 정상 100% (200) | `tc12_bmi_normal_low.csv` | P0 | Implemented |
+| 13 | 분류 | `TC_13_Boundary_Normal_Below23` | BMI≈23−ε | 동일 | 정상 100% | `tc13_bmi_normal_high.csv` | P0 | Implemented |
+| 14 | 분류 | `TC_14_Boundary_Overweight_23` | BMI=23.0 | 동일 | 과체중 100% (300) | `tc14_bmi_23.csv` | P0 | Implemented |
+| 15 | 분류 | `TC_15_Boundary_Overweight_Below25` | BMI≈25−ε | 동일 | 과체중 100% | `tc15_bmi_24_99.csv` | P0 | Implemented |
 | 16 | 분류 | `TC_16_Boundary_Obesity_25` | BMI=25.0 | 동일 | 비만 100% (400) | `tc16_bmi_25.csv` | P0 | **Red** |
-| 17 | 분류 | `TC_17_Boundary_Obesity_30` | BMI=30.0 | 동일 | 비만 100% | `tc17_bmi_30.csv` | P0 | Planned |
-| 18 | 분류 | `TC_18_Classification_ExclusiveComplete` | 20대 4분류 각 1명 | 동일 | 각 25%, 합≈100 | `tc18_four_categories.csv` | P0 | Planned |
+| 17 | 분류 | `TC_17_Boundary_Obesity_30` | BMI=30.0 | 동일 | 비만 100% | `tc17_bmi_30.csv` | P0 | Implemented |
+| 18 | 분류 | `TC_18_Classification_ExclusiveComplete` | 20대 4분류 각 1명 | 동일 | 각 25%, 합≈100 (TC_16 Red 시 합 75%) | `tc18_four_categories.csv` | P0 | Implemented |
 | 22 | 예외 | `TC_22_InvalidAgeClassAndType` | 잘못된 API 인자 | `getBmiRatio` | 0.0 | (픽스처 불필요) | P1 | Planned |
 | 23 | 예외 | `TC_23_GetBmiRatio_BeforeCalculate` | 초기 상태 | `getBmiRatio` | 0.0 | — | P1 | Planned |
 | 24 | 예외 | `TC_24_FileNotFound` | 없는 경로 | `calculateBmi` | return 0 | — | P0 | Planned |
@@ -410,7 +410,7 @@ flowchart TD
 | 0 | 픽스처·`SHealthBMITest` 골격 | — | `test/fixtures/`, ctest Green — **완료** |
 | 1 | BMI 계산 | 01~04 | §4 Implemented — **완료** |
 | 2 | Age 보정 | 06~10 | §5 Implemented — **완료** |
-| 3 | 분류 | 11~18 | §6 Implemented (16=Red 허용) |
+| 3 | 분류 | 11~18 | §6 Implemented (16=Red) — **완료** |
 | 4 | 예외 | 05,22~26,31 | §7 Implemented |
 | 5 | TDD Green | 16 | §8 해소 |
 | 6 | 회귀 | 18, 전체 | §3 상태 일괄 갱신 |
