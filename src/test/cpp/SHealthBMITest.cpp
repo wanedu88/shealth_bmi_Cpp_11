@@ -116,6 +116,16 @@ double ratioSumForBand(SHealth& health, int ageClass) {
            health.getBmiRatio(ageClass, static_cast<int>(BmiCategoryCode::Obesity));
 }
 
+double distributionSum(const AgeBandDistribution& distribution) {
+    return distribution.underweight + distribution.normal + distribution.overweight +
+           distribution.obesity;
+}
+
+double overallDistributionSum(const OverallBmiDistribution& distribution) {
+    return distribution.underweight + distribution.normal + distribution.overweight +
+           distribution.obesity;
+}
+
 void expectSingleBandCategory(SHealth& health,
                               int count,
                               int ageClass,
@@ -287,14 +297,29 @@ TEST_F(SHealthBMITest, TC_18_Classification_ExclusiveComplete) {
     EXPECT_NEAR(100.0, ratioSumForBand(health, 20), 1e-2);
 }
 
-TEST_F(SHealthBMITest, TC_05_HeightZero_CurrentBehavior) {
-    // Given: height=0 (height_m=0 → BMI inf)
+TEST_F(SHealthBMITest, TC_05_HeightZero_NoBandPeers_SkipsImpute) {
+    // Given: 20대 1명 height=0, 동 연령대 유효 height 표본 없음
     const std::string path = fixturePath("tc05_height_zero.csv");
     // When:  calculateBmi(path)
     const int count = health.calculateBmi(path);
-    // Then:  스냅샷 — inf → bmi>25 → 비만 100% (F-10 전까지 고정)
+    // Then:  F-10 보정 생략(nonZeroHeightCount=0) → height 0 유지 → BMI inf → 비만 100%
     EXPECT_EQ(1, count);
     EXPECT_NEAR(100.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Obesity)),
+                1e-2);
+}
+
+TEST_F(SHealthBMITest, TC_34_ImputesHeight_BandAverage) {
+    // Given: 20대 3명 height 170/0/180 — 0 행은 (170+180)/2=175.0 보정 (F-10)
+    const std::string path = fixturePath("tc34_impute_heights.csv");
+    // When:  calculateBmi(path)
+    const int count = health.calculateBmi(path);
+    // Then:  보정 후 3명 모두 BMI 정상 구간 → Normal 100%
+    EXPECT_EQ(3, count);
+    EXPECT_NEAR(100.0,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Normal)),
+                1e-2);
+    EXPECT_NEAR(0.0,
                 health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Obesity)),
                 1e-2);
 }
@@ -365,4 +390,82 @@ TEST_F(SHealthBMITest, TC_31_Recalculate_OverwritesStats) {
     EXPECT_NEAR(0.0,
                 health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Normal)),
                 1e-2);
+}
+
+TEST_F(SHealthBMITest, TC_33_GetAgeBandDistribution_ThreeCategories) {
+    // Given: 20대 3명 — 저체중/정상/과체중 각 1명 (170cm)
+    const std::string path = fixturePath("tc33_three_categories_20s.csv");
+    // When:  calculateBmi(path) → getAgeBandDistribution(20)
+    const int count = health.calculateBmi(path);
+    const AgeBandDistribution dist = health.getAgeBandDistribution(20);
+    // Then:  각 ~33.33%, 비만 0%, 합≈100; getBmiRatio와 일치
+    EXPECT_EQ(3, count);
+    EXPECT_NEAR(33.33, dist.underweight, 1e-2);
+    EXPECT_NEAR(33.33, dist.normal, 1e-2);
+    EXPECT_NEAR(33.33, dist.overweight, 1e-2);
+    EXPECT_NEAR(0.0, dist.obesity, 1e-2);
+    EXPECT_NEAR(100.0, distributionSum(dist), 1e-2);
+    EXPECT_NEAR(dist.underweight,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Underweight)),
+                1e-4);
+    EXPECT_NEAR(dist.normal,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Normal)),
+                1e-4);
+    EXPECT_NEAR(dist.overweight,
+                health.getBmiRatio(20, static_cast<int>(BmiCategoryCode::Overweight)),
+                1e-4);
+    // 잘못된 ageClass(25) → 전부 0
+    const AgeBandDistribution invalid = health.getAgeBandDistribution(25);
+    EXPECT_DOUBLE_EQ(0.0, invalid.underweight);
+    EXPECT_DOUBLE_EQ(0.0, invalid.normal);
+    EXPECT_DOUBLE_EQ(0.0, invalid.overweight);
+    EXPECT_DOUBLE_EQ(0.0, invalid.obesity);
+}
+
+TEST_F(SHealthBMITest, TC_35_GetNormalBmiUserIds_TwoOfThree) {
+    // Given: 3명 — 저체중(101) 1명, 정상(102,103) 2명 (170cm)
+    EXPECT_TRUE(health.getNormalBmiUserIds().empty());
+    const std::string path = fixturePath("tc35_normal_bmi_users.csv");
+    // When:  calculateBmi(path) → getNormalBmiUserIds()
+    const int count = health.calculateBmi(path);
+    const std::vector<int> normalIds = health.getNormalBmiUserIds();
+    // Then:  size==2, ID {102,103} (F-11: classifyBmi Normal과 동일)
+    EXPECT_EQ(3, count);
+    ASSERT_EQ(2u, normalIds.size());
+    EXPECT_EQ(102, normalIds[0]);
+    EXPECT_EQ(103, normalIds[1]);
+}
+
+TEST_F(SHealthBMITest, TC_36_GetOverallBmiDistribution_SumsTo100) {
+    // Given: 20대 4명 — 저체중/정상/과체중/비만 각 1명 (tc18)
+    const std::string path = fixturePath("tc18_four_categories.csv");
+    // When:  calculateBmi(path) → getOverallBmiDistribution()
+    const int count = health.calculateBmi(path);
+    const OverallBmiDistribution overall = health.getOverallBmiDistribution();
+    // Then:  전체 4분류 각 25%, 합≈100 (F-12)
+    EXPECT_EQ(4, count);
+    EXPECT_NEAR(25.0, overall.underweight, 1e-2);
+    EXPECT_NEAR(25.0, overall.normal, 1e-2);
+    EXPECT_NEAR(25.0, overall.overweight, 1e-2);
+    EXPECT_NEAR(25.0, overall.obesity, 1e-2);
+    EXPECT_NEAR(100.0, overallDistributionSum(overall), 0.1);
+}
+
+TEST_F(SHealthBMITest, TC_37_OverallEmpty_AndAgeBandSumRegression) {
+    // Given: 헤더만 CSV — recordCount==0
+    const std::string emptyPath = fixturePath("tc25_header_only.csv");
+    // When:  calculateBmi(empty) → getOverallBmiDistribution()
+    EXPECT_EQ(0, health.calculateBmi(emptyPath));
+    const OverallBmiDistribution emptyOverall = health.getOverallBmiDistribution();
+    // Then:  전체 비율 전부 0.0
+    EXPECT_DOUBLE_EQ(0.0, emptyOverall.underweight);
+    EXPECT_DOUBLE_EQ(0.0, emptyOverall.normal);
+    EXPECT_DOUBLE_EQ(0.0, emptyOverall.overweight);
+    EXPECT_DOUBLE_EQ(0.0, emptyOverall.obesity);
+    // Given: tc18 — 연령대별 합≈100% 회귀 (TC_18)
+    const std::string path = fixturePath("tc18_four_categories.csv");
+    ASSERT_EQ(4, health.calculateBmi(path));
+    EXPECT_NEAR(100.0, ratioSumForBand(health, 20), 0.1);
+    const OverallBmiDistribution overall = health.getOverallBmiDistribution();
+    EXPECT_NEAR(100.0, overallDistributionSum(overall), 0.1);
 }

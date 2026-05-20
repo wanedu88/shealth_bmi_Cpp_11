@@ -1,5 +1,6 @@
 #pragma once
 
+#include <istream>
 #include <string>
 #include <vector>
 
@@ -15,13 +16,15 @@ constexpr int kAgeBandStep = 10;
 constexpr int kAgeBandWidth = 10;
 constexpr int kAgeBandCount = (kAgeBandStartMax - kAgeBandStartMin) / kAgeBandStep + 1;
 
+constexpr int kCsvColId = 0;
 constexpr int kCsvColAge = 1;
 constexpr int kCsvColWeight = 2;
 constexpr int kCsvColHeight = 3;
 constexpr char kCsvDelimiter = ',';
 
 constexpr double kHeightCmPerMeter = 100.0;
-constexpr double kMissingWeight = 0.0;
+constexpr double kMissingWeight = 0.0;  // F-03: 체중 누락
+constexpr double kMissingHeight = 0.0;  // F-10: 키 누락 (동일 0.0)
 constexpr int kPercentMultiplier = 100;
 }  // namespace SHealthConstants
 
@@ -33,10 +36,35 @@ enum class BmiCategoryCode : int {
     Obesity = 400
 };
 
+// F-09: 연령대별 4분류 BMI 분포 비율(%) — getBmiRatio와 동일 값
+struct AgeBandDistribution {
+    double underweight = 0.0;
+    double normal = 0.0;
+    double overweight = 0.0;
+    double obesity = 0.0;
+};
+
+// F-12: 전체 로드 인원 대비 4분류 BMI 비율(%) — 연령대 무관
+struct OverallBmiDistribution {
+    double underweight = 0.0;
+    double normal = 0.0;
+    double overweight = 0.0;
+    double obesity = 0.0;
+};
+
 class SHealth {
 public:
     int calculateBmi(const std::string& filename);
     double getBmiRatio(int ageClass, int type);
+
+    // ageClass ∈ {20, 30, …, 70} 만 유효; 그 외(19, 25, 80 등)는 전부 0.0 반환
+    AgeBandDistribution getAgeBandDistribution(int ageClass) const;
+
+    // F-11: classifyBmi Normal 슬롯(18.5 < BMI < 23) 사용자 ID 목록
+    std::vector<int> getNormalBmiUserIds() const;
+
+    // recordCount==0 이면 전부 0.0
+    OverallBmiDistribution getOverallBmiDistribution() const;
 
 private:
     enum class BmiClassSlot { None, Underweight, Normal, Overweight, Obesity };
@@ -49,23 +77,38 @@ private:
     };
 
     int recordCount = 0;
+    int ids[10000];
     int ages[10000];
     double heights[10000];
     double weights[10000];
     double bmis[10000];
     AgeBandRatios ageBandRatios[SHealthConstants::kAgeBandCount];
+    AgeBandRatios overallRatios;
 
+    // --- Parser: CSV load (DIP — stream vs file) ---
     bool loadRecordsFromFile(const std::string& filename);
+    bool loadFromStream(std::istream& input);
     bool parseAndStoreLine(const std::string& line);
+    std::vector<std::string> split(const std::string& line, char delimiter);
+
+    // --- Domain + Statistics pipeline ---
+    void runBmiPipeline();
     void imputeMissingWeightsByAgeBand();
+    void imputeMissingHeightsByAgeBand();
     void computeAllBmis();
     BmiClassSlot classifyBmi(double bmi) const;
     void aggregateRatiosByAgeBand();
+    void aggregateOverallRatios();
 
+    void incrementClassificationCount(BmiClassSlot slot, int& underweightCount, int& normalCount,
+                                      int& overweightCount, int& obesityCount) const;
+    void fillRatiosFromCounts(AgeBandRatios& ratios, int underweightCount, int normalCount,
+                              int overweightCount, int obesityCount, int memberCount) const;
+    static AgeBandDistribution toDistribution(const AgeBandRatios& ratios);
+
+    // --- Query helpers ---
     bool isInAgeBand(int age, int ageBandStart) const;
     int ageBandIndexFromStart(int ageBandStart) const;
     int ageBandIndexFromClass(int ageClass) const;
     double ratioForCategory(const AgeBandRatios& ratios, BmiCategoryCode category) const;
-
-    std::vector<std::string> split(const std::string& line, char delimiter);
 };
