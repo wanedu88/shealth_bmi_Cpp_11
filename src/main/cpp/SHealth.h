@@ -44,6 +44,14 @@ struct AgeBandDistribution {
     double obesity = 0.0;
 };
 
+// F-12: 전체 로드 인원 대비 4분류 BMI 비율(%) — 연령대 무관
+struct OverallBmiDistribution {
+    double underweight = 0.0;
+    double normal = 0.0;
+    double overweight = 0.0;
+    double obesity = 0.0;
+};
+
 class SHealth {
 public:
     int calculateBmi(const std::string& filename);
@@ -54,6 +62,9 @@ public:
 
     // F-11: classifyBmi Normal 슬롯(18.5 < BMI < 23) 사용자 ID 목록
     std::vector<int> getNormalBmiUserIds() const;
+
+    // recordCount==0 이면 전부 0.0
+    OverallBmiDistribution getOverallBmiDistribution() const;
 
 private:
     enum class BmiClassSlot { None, Underweight, Normal, Overweight, Obesity };
@@ -72,6 +83,7 @@ private:
     double weights[10000];
     double bmis[10000];
     AgeBandRatios ageBandRatios[SHealthConstants::kAgeBandCount];
+    AgeBandRatios overallRatios;
 
     // --- Parser: CSV load (DIP — stream vs file) ---
     bool loadRecordsFromFile(const std::string& filename);
@@ -86,6 +98,13 @@ private:
     void computeAllBmis();
     BmiClassSlot classifyBmi(double bmi) const;
     void aggregateRatiosByAgeBand();
+    void aggregateOverallRatios();
+
+    void incrementClassificationCount(BmiClassSlot slot, int& underweightCount, int& normalCount,
+                                      int& overweightCount, int& obesityCount) const;
+    void fillRatiosFromCounts(AgeBandRatios& ratios, int underweightCount, int normalCount,
+                              int overweightCount, int obesityCount, int memberCount) const;
+    static AgeBandDistribution toDistribution(const AgeBandRatios& ratios);
 
     // --- Query helpers ---
     bool isInAgeBand(int age, int ageBandStart) const;

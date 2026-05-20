@@ -5,6 +5,8 @@ namespace {
 constexpr const char* kDefaultDataFile = "shealth.dat";
 constexpr const char* kAgeBandRatioFormat =
     "%d - underweight = %f, normal = %f, overweight = %f, obesity = %f\n";
+constexpr const char* kOverallRatioFormat =
+    "Overall - underweight = %f, normal = %f, overweight = %f, obesity = %f\n";
 }  // namespace
 
 int main() {
@@ -18,6 +20,10 @@ int main() {
         printf(kAgeBandRatioFormat, ageBandStart, dist.underweight, dist.normal, dist.overweight,
                dist.obesity);
     }
+
+    const OverallBmiDistribution overall = shealth.getOverallBmiDistribution();
+    printf(kOverallRatioFormat, overall.underweight, overall.normal, overall.overweight,
+           overall.obesity);
 
     const std::vector<int> normalIds = shealth.getNormalBmiUserIds();
     printf("Normal BMI users (%zu):", normalIds.size());

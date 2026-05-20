@@ -34,6 +34,7 @@ void SHealth::runBmiPipeline() {
     imputeMissingHeightsByAgeBand();
     computeAllBmis();
     aggregateRatiosByAgeBand();
+    aggregateOverallRatios();
 }
 
 bool SHealth::loadRecordsFromFile(const std::string& filename) {
@@ -160,41 +161,76 @@ SHealth::BmiClassSlot SHealth::classifyBmi(double bmi) const {
     return BmiClassSlot::None;
 }
 
+void SHealth::incrementClassificationCount(BmiClassSlot slot, int& underweightCount,
+                                             int& normalCount, int& overweightCount,
+                                             int& obesityCount) const {
+    switch (slot) {
+        case BmiClassSlot::Underweight:
+            underweightCount++;
+            break;
+        case BmiClassSlot::Normal:
+            normalCount++;
+            break;
+        case BmiClassSlot::Overweight:
+            overweightCount++;
+            break;
+        case BmiClassSlot::Obesity:
+            obesityCount++;
+            break;
+        case BmiClassSlot::None:
+            break;
+    }
+}
+
+void SHealth::fillRatiosFromCounts(AgeBandRatios& ratios, int underweightCount, int normalCount,
+                                   int overweightCount, int obesityCount, int memberCount) const {
+    if (memberCount == 0) {
+        ratios = {};
+        return;
+    }
+    ratios.underweight =
+        static_cast<double>(underweightCount) * kPercentMultiplier / memberCount;
+    ratios.normal = static_cast<double>(normalCount) * kPercentMultiplier / memberCount;
+    ratios.overweight =
+        static_cast<double>(overweightCount) * kPercentMultiplier / memberCount;
+    ratios.obesity = static_cast<double>(obesityCount) * kPercentMultiplier / memberCount;
+}
+
+AgeBandDistribution SHealth::toDistribution(const AgeBandRatios& ratios) {
+    return {ratios.underweight, ratios.normal, ratios.overweight, ratios.obesity};
+}
+
 void SHealth::aggregateRatiosByAgeBand() {
     for (int bandIndex = 0; bandIndex < kAgeBandCount; bandIndex++) {
         const int ageBandStart = kAgeBandStartMin + bandIndex * kAgeBandStep;
         int underweightCount = 0;
-        int normalweightCount = 0;
+        int normalCount = 0;
         int overweightCount = 0;
         int obesityCount = 0;
         int bandMemberCount = 0;
         for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
             if (isInAgeBand(ages[recordIndex], ageBandStart)) {
                 bandMemberCount++;
-                switch (classifyBmi(bmis[recordIndex])) {
-                    case BmiClassSlot::Underweight:
-                        underweightCount++;
-                        break;
-                    case BmiClassSlot::Normal:
-                        normalweightCount++;
-                        break;
-                    case BmiClassSlot::Overweight:
-                        overweightCount++;
-                        break;
-                    case BmiClassSlot::Obesity:
-                        obesityCount++;
-                        break;
-                    case BmiClassSlot::None:
-                        break;
-                }
+                incrementClassificationCount(classifyBmi(bmis[recordIndex]), underweightCount,
+                                             normalCount, overweightCount, obesityCount);
             }
         }
-        AgeBandRatios& ratios = ageBandRatios[bandIndex];
-        ratios.underweight = (double)underweightCount * kPercentMultiplier / bandMemberCount;
-        ratios.normal = (double)normalweightCount * kPercentMultiplier / bandMemberCount;
-        ratios.overweight = (double)overweightCount * kPercentMultiplier / bandMemberCount;
-        ratios.obesity = (double)obesityCount * kPercentMultiplier / bandMemberCount;
+        fillRatiosFromCounts(ageBandRatios[bandIndex], underweightCount, normalCount,
+                             overweightCount, obesityCount, bandMemberCount);
     }
+}
+
+void SHealth::aggregateOverallRatios() {
+    int underweightCount = 0;
+    int normalCount = 0;
+    int overweightCount = 0;
+    int obesityCount = 0;
+    for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
+        incrementClassificationCount(classifyBmi(bmis[recordIndex]), underweightCount, normalCount,
+                                     overweightCount, obesityCount);
+    }
+    fillRatiosFromCounts(overallRatios, underweightCount, normalCount, overweightCount,
+                         obesityCount, recordCount);
 }
 
 double SHealth::ratioForCategory(const AgeBandRatios& ratios, BmiCategoryCode category) const {
@@ -232,8 +268,13 @@ AgeBandDistribution SHealth::getAgeBandDistribution(int ageClass) const {
     if (bandIndex < 0) {
         return {};
     }
-    const AgeBandRatios& ratios = ageBandRatios[bandIndex];
-    return {ratios.underweight, ratios.normal, ratios.overweight, ratios.obesity};
+    return toDistribution(ageBandRatios[bandIndex]);
+}
+
+OverallBmiDistribution SHealth::getOverallBmiDistribution() const {
+    const AgeBandDistribution distribution = toDistribution(overallRatios);
+    return {distribution.underweight, distribution.normal, distribution.overweight,
+            distribution.obesity};
 }
 
 std::vector<int> SHealth::getNormalBmiUserIds() const {
