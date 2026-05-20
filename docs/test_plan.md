@@ -129,11 +129,11 @@ protected:
 | 03 | BMI | `TC_03_CalculatesBmi_ReadmeSample` | 79.5kg, 158.3cm | 동일 | BMI≈31.72 | `tc03_readme_sample.csv` | P0 | Implemented |
 | 04 | BMI | `TC_04_CalculatesBmi_LargeHeight` | 유효 큰 height | 동일 | BMI 유한·>0 | `tc04_large_height.csv` | P1 | Implemented |
 | 05 | 예외 | `TC_05_HeightZero_CurrentBehavior` | height=0 | `calculateBmi` | inf/NaN/None **현재 스냅샷** | `tc05_height_zero.csv` | P1 | Planned |
-| 06 | 보정 | `TC_06_ImputesWeight_BandAverage` | 20대 50,60,0 | 동일 | 0→55, BMI 일치 | `tc06_impute_three.csv` | P0 | Planned |
-| 07 | 보정 | `TC_07_AllWeightsZero_DivideByZero` | 연령대 전원 0 | 동일 | 0/NaN **스냅샷** (수정 별도) | `tc07_all_zero.csv` | P0 | Planned |
-| 08 | 보정 | `TC_08_IsolatesAgeBands` | 20대·30대 분리 | 동일 | 30대 0에 20대 평균 미적용 | `tc08_band_isolation.csv` | P0 | Planned |
-| 09 | 보정 | `TC_09_SingleValidSample` | 유효 1명+0 1명 | 동일 | 0→유효 체중 | `tc09_single_valid.csv` | P0 | Planned |
-| 10 | 보정 | `TC_10_BmiChangesAfterImpute` | 0 포함 | 동일 | 보정 후 비율/BMI 변화 | `tc06` 변형 | P1 | Planned |
+| 06 | 보정 | `TC_06_ImputesWeight_BandAverage` | 20대 50,60,0 | 동일 | 0→55, BMI 일치 | `tc06_impute_three.csv` | P0 | Implemented |
+| 07 | 보정 | `TC_07_AllWeightsZero_DivideByZero` | 연령대 전원 0 | 동일 | 0/NaN **스냅샷** (수정 별도) | `tc07_all_zero.csv` | P0 | Implemented |
+| 08 | 보정 | `TC_08_IsolatesAgeBands` | 20대·30대 분리 | 동일 | 30대 0에 20대 평균 미적용 | `tc08_band_isolation.csv` | P0 | Implemented |
+| 09 | 보정 | `TC_09_SingleValidSample` | 유효 1명+0 1명 | 동일 | 0→유효 체중 | `tc09_single_valid.csv` | P0 | Implemented |
+| 10 | 보정 | `TC_10_BmiChangesAfterImpute` | 0 포함 | 동일 | 보정 후 비율/BMI 변화 | `tc06` 변형 | P1 | Implemented |
 | 11 | 분류 | `TC_11_Boundary_Underweight_18_5` | BMI=18.5 | 동일 | 저체중 100% (code 100) | `tc11_bmi_18_5.csv` | P0 | Planned |
 | 12 | 분류 | `TC_12_Boundary_Normal_Above18_5` | BMI>18.5 | 동일 | 정상 100% (200) | `tc12_bmi_normal_low.csv` | P0 | Planned |
 | 13 | 분류 | `TC_13_Boundary_Normal_Below23` | BMI≈23−ε | 동일 | 정상 100% | `tc13_bmi_normal_high.csv` | P0 | Planned |
@@ -409,7 +409,7 @@ flowchart TD
 |------|------|-----|------|
 | 0 | 픽스처·`SHealthBMITest` 골격 | — | `test/fixtures/`, ctest Green — **완료** |
 | 1 | BMI 계산 | 01~04 | §4 Implemented — **완료** |
-| 2 | Age 보정 | 06~10 | §5 Implemented |
+| 2 | Age 보정 | 06~10 | §5 Implemented — **완료** |
 | 3 | 분류 | 11~18 | §6 Implemented (16=Red 허용) |
 | 4 | 예외 | 05,22~26,31 | §7 Implemented |
 | 5 | TDD Green | 16 | §8 해소 |
