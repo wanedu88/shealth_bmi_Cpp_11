@@ -5,7 +5,7 @@
 | 문서 버전 | 1.0 |
 | 작성 기준 | README Activities §3, `docs/requirements_analysis.md` §4, `.cursorrules` |
 | 대상 코드 | `SHealth.h`, `SHealth.cpp` (`shealth_lib`) |
-| 구현 상태 | **§9 0~4단계 완료** — TC 24건 Implemented; **TC_16 Red**; Green 턴(§9-5) 대기 |
+| 구현 상태 | **§9 0~5단계 완료** — TC 24건 Implemented; **ctest 26/26 Green** |
 
 ---
 
@@ -139,9 +139,9 @@ protected:
 | 13 | 분류 | `TC_13_Boundary_Normal_Below23` | BMI≈23−ε | 동일 | 정상 100% | `tc13_bmi_normal_high.csv` | P0 | Implemented |
 | 14 | 분류 | `TC_14_Boundary_Overweight_23` | BMI=23.0 | 동일 | 과체중 100% (300) | `tc14_bmi_23.csv` | P0 | Implemented |
 | 15 | 분류 | `TC_15_Boundary_Overweight_Below25` | BMI≈25−ε | 동일 | 과체중 100% | `tc15_bmi_24_99.csv` | P0 | Implemented |
-| 16 | 분류 | `TC_16_Boundary_Obesity_25` | BMI=25.0 | 동일 | 비만 100% (400) | `tc16_bmi_25.csv` | P0 | **Red** |
+| 16 | 분류 | `TC_16_Boundary_Obesity_25` | BMI=25.0 | 동일 | 비만 100% (400) | `tc16_bmi_25.csv` | P0 | Implemented |
 | 17 | 분류 | `TC_17_Boundary_Obesity_30` | BMI=30.0 | 동일 | 비만 100% | `tc17_bmi_30.csv` | P0 | Implemented |
-| 18 | 분류 | `TC_18_Classification_ExclusiveComplete` | 20대 4분류 각 1명 | 동일 | 각 25%, 합≈100 (TC_16 Red 시 합 75%) | `tc18_four_categories.csv` | P0 | Implemented |
+| 18 | 분류 | `TC_18_Classification_ExclusiveComplete` | 20대 4분류 각 1명 | 동일 | 각 25%, 합≈100 | `tc18_four_categories.csv` | P0 | Implemented |
 | 22 | 예외 | `TC_22_InvalidAgeClassAndType` | 잘못된 API 인자 | `getBmiRatio` | 0.0 | (픽스처 불필요) | P1 | Implemented |
 | 23 | 예외 | `TC_23_GetBmiRatio_BeforeCalculate` | 초기 상태 | `getBmiRatio` | 0.0 | — | P1 | Implemented |
 | 24 | 예외 | `TC_24_FileNotFound` | 없는 경로 | `calculateBmi` | return 0 | — | P0 | Implemented |
@@ -295,11 +295,11 @@ id,age,weight,height
 // Then:  EXPECT_NEAR(getBmiRatio(20, <code>), 100.0, 0.1);
 ```
 
-#### TC_16 — BMI 25.0 (Red)
+#### TC_16 — BMI 25.0 (Green)
 
 | README | BMI ≥ 25 → 비만 |
-| 현재 코드 | `bmi > 25` 만 비만 → BMI=25.0 → `BmiClassSlot::None` |
-| 계획 | **Red** 로 추가 → Green 턴에서 `>= kBmiOverweightMax` 수정 |
+| 수정 | `classifyBmi`: `bmi >= kBmiOverweightMax`; 픽스처 weight **72.25** |
+| 검증 | ctest Green (DEF-001 Fixed) |
 
 #### TC_18 — 상호 배타·완전
 
@@ -311,7 +311,7 @@ id,age,weight,height
 4,28,72.25,170.0
 ```
 
-| Then | `getBmiRatio(20,100/200/300/400)` 각 ≈ **25.0**; 합 ≈ **100.0** (TC_16 Red 시 합 < 100 가능 — Green 후 재검증) |
+| Then | `getBmiRatio(20,100/200/300/400)` 각 ≈ **25.0**; 합 ≈ **100.0** |
 
 ---
 
@@ -376,17 +376,10 @@ id,age,weight,height
 
 | TC | 이슈 | README / 명세 | 현재 구현 | 전략 |
 |----|------|---------------|-----------|------|
-| **16** | BMI=25.0 미분류 | ≥25 비만 | `bmi > 25` only → `None` | **Red** → `classifyBmi` 수정 → Green |
+| ~~**16**~~ | ~~BMI=25.0 미분류~~ | ≥25 비만 | `>= kBmiOverweightMax` | **Fixed** (DEF-001, 2026-05-20) |
 | **07** | ageCount=0 | 보정 skip 또는 0 유지 | `weightSum/0` | 스냅샷 TC → 요구 확정 후 Green |
-| **05** | height=0 | F-10 (기능 개선) | div-by-zero → inf/NaN | 스냅샷; F-10은 **3단계** |
-| **18** | 비율 합 < 100% | 합≈100% | TC_16 연쇄 | TC_16 Green 후 재실행 |
-
-### Green 전용 턴 (TC_16)
-
-```
-수정: SHealth::classifyBmi — 비만 조건을 `bmi >= kBmiOverweightMax` 로 변경
-검증: ctest 전체 Green, TC_16·TC_18 통과
-```
+| **05** | height=0 | F-10 (기능 개선) | div-by-zero → inf/NaN | 스냅샷; F-10은 **4단계** |
+| ~~**18**~~ | ~~비율 합 < 100%~~ | 합≈100% | TC_16 연쇄 | **Verified** (DEF-004) |
 
 ---
 
@@ -398,10 +391,8 @@ flowchart TD
     B --> C[2. TC 06~10 보정]
     C --> D[3. TC 11~18 분류]
     D --> E[4. TC 05,22~26,31 예외]
-    E --> F{TC_16 Red?}
-    F -->|Yes| G[5. classifyBmi Green]
-    F -->|No| H[6. ctest 전체 Green]
-    G --> H
+    E --> G[5. classifyBmi Green]
+    G --> H[6. ctest 전체 Green]
     H --> I[7. test_plan.md 상태 Implemented 갱신]
 ```
 
@@ -410,10 +401,10 @@ flowchart TD
 | 0 | 픽스처·`SHealthBMITest` 골격 | — | `test/fixtures/`, ctest Green — **완료** |
 | 1 | BMI 계산 | 01~04 | §4 Implemented — **완료** |
 | 2 | Age 보정 | 06~10 | §5 Implemented — **완료** |
-| 3 | 분류 | 11~18 | §6 Implemented (16=Red) — **완료** |
+| 3 | 분류 | 11~18 | §6 Implemented — **완료** |
 | 4 | 예외 | 05,22~26,31 | §7 Implemented — **완료** |
-| 5 | TDD Green | 16 | §8 해소 |
-| 6 | 회귀 | 18, 전체 | §3 상태 일괄 갱신 |
+| 5 | TDD Green | 16 | §8 해소 — **완료** |
+| 6 | 회귀 | 18, 전체 | §3 상태 일괄 갱신 — **완료** |
 
 ### 구현 프롬프트 (계획 → 코드)
 
@@ -433,7 +424,7 @@ flowchart TD
 | 75 | BMI 계산 로직 TC | 01, 02, 03, 04, (05) | 01~04 ctest Green |
 | 76 | Age 평균치 보정 로직 TC | 06, 07, 08, 09, 10 | 06~10 ctest Green (07 스냅샷 포함) |
 | 77 | 정상/저체중/과체중/비만 분류 TC | 11~18 | 11~15,17~18 Green; **16 Green 턴** |
-| 78 | 예외상황 TC | 05, 22, 23, 24, 25, 26, 31 | 해당 TC ctest Green — **완료** (TC_16 Red 제외) |
+| 78 | 예외상황 TC | 05, 22, 23, 24, 25, 26, 31 | 해당 TC ctest Green — **완료** |
 
 ### 인프라 완료 조건 (선행)
 

@@ -118,7 +118,7 @@ SHealth::BmiClassSlot SHealth::classifyBmi(double bmi) const {
     if (bmi >= kBmiNormalMax && bmi < kBmiOverweightMax) {
         return BmiClassSlot::Overweight;
     }
-    if (bmi > kBmiOverweightMax) {
+    if (bmi >= kBmiOverweightMax) {
         return BmiClassSlot::Obesity;
     }
     return BmiClassSlot::None;

@@ -248,12 +248,11 @@ TEST_F(SHealthBMITest, TC_15_Boundary_Overweight_Below25) {
 }
 
 TEST_F(SHealthBMITest, TC_16_Boundary_Obesity_25) {
-    // Given: weight=72.249 → BMI≈25.0 미만(과체중); 72.25는 float에서 >25 → 비만
-    // README 목표 BMI=25.0 비만; 현재 bmi>25 only → Red
+    // Given: weight=72.25 → BMI=25.0 (README: ≥25 비만)
     const std::string path = fixturePath("tc16_bmi_25.csv");
     // When:  calculateBmi(path)
     const int count = health.calculateBmi(path);
-    // Then:  비만 100% (code 400) — **Red**: 현재 bmi>25 only → None
+    // Then:  비만 100% (code 400)
     expectSingleBandCategory(health, count, 20, BmiCategoryCode::Obesity);
 }
 
